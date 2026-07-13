@@ -1,0 +1,10 @@
+{
+  "name": "jlpt-voca-parking",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:coverage": "node --experimental-test-coverage --test-coverage-include='parking/assets/*.js' --test-coverage-lines=80 --test-coverage-branches=80 --test-coverage-functions=80 --test tests/*.test.mjs",
+    "check": "npm run test:coverage"
+  }
+}
