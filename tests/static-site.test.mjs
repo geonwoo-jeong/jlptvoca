@@ -41,9 +41,56 @@ const visualRatingLabels = {
   "vi/index.html": ["Lại", "Tốt"],
   "id/index.html": ["Ulangi", "Bagus"],
 };
+const hreflangCluster = [
+  ["x-default", "https://jlptvoca.com/"],
+  ["en", "https://jlptvoca.com/en/"],
+  ["vi", "https://jlptvoca.com/vi/"],
+  ["id", "https://jlptvoca.com/id/"],
+];
+const seoPages = {
+  "index.html": {
+    url: "https://jlptvoca.com/",
+    title: "Japanese Vocabulary Study — Choose Your Language | JLPT VOCA",
+    description: "Choose English, Vietnamese, or Indonesian for JLPT VOCA, a free Japanese vocabulary study space for focused practice and smarter review. Coming soon.",
+    ogLocale: "en_US",
+    imageAlt: "JLPT VOCA Japanese vocabulary flashcard preview",
+  },
+  "en/index.html": {
+    url: "https://jlptvoca.com/en/",
+    title: "JLPT Vocabulary Study and Review — Coming Soon | JLPT VOCA",
+    description: "JLPT VOCA is preparing a free Japanese vocabulary study space for focused JLPT practice and smarter review. Coming soon.",
+    ogLocale: "en_US",
+    imageAlt: "JLPT VOCA Japanese vocabulary flashcard preview",
+  },
+  "vi/index.html": {
+    url: "https://jlptvoca.com/vi/",
+    title: "Học từ vựng JLPT — Sắp ra mắt | JLPT VOCA",
+    description: "JLPT VOCA đang chuẩn bị một không gian học từ vựng tiếng Nhật miễn phí, giúp bạn luyện thi JLPT tập trung và ôn tập thông minh hơn.",
+    ogLocale: "vi_VN",
+    imageAlt: "Bản xem trước thẻ từ vựng tiếng Nhật JLPT VOCA",
+  },
+  "id/index.html": {
+    url: "https://jlptvoca.com/id/",
+    title: "Belajar Kosakata JLPT — Segera Hadir | JLPT VOCA",
+    description: "JLPT VOCA sedang menyiapkan ruang belajar kosakata bahasa Jepang gratis untuk latihan JLPT yang terarah dan pengulangan yang lebih cerdas.",
+    ogLocale: "id_ID",
+    imageAlt: "Pratinjau kartu kosakata bahasa Jepang JLPT VOCA",
+  },
+};
 
 async function readParkingFile(relativePath) {
   return readFile(path.join(parkingRoot, relativePath), "utf8");
+}
+
+function metaContent(html, attribute, value) {
+  const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = html.match(new RegExp(`<meta\\s+${attribute}="${escaped}"\\s+content="([^"]*)">`));
+  assert.ok(match, `missing ${attribute}=${value}`);
+  return match[1];
+}
+
+function robotsTokens(html) {
+  return new Set(metaContent(html, "name", "robots").split(",").map((value) => value.trim().toLowerCase()));
 }
 
 test("publishing artifact contains every required static file", async () => {
@@ -51,6 +98,7 @@ test("publishing artifact contains every required static file", async () => {
     "index.html",
     "404.html",
     "robots.txt",
+    "sitemap.xml",
     "assets/site.css",
     "assets/site.js",
     "assets/locale.js",
@@ -90,6 +138,7 @@ test("publishing artifact contains only allowlisted public files", async () => {
     "id/index.html",
     "index.html",
     "robots.txt",
+    "sitemap.xml",
     "vi/index.html",
   ].sort();
 
@@ -109,32 +158,114 @@ for (const [locale, copy] of Object.entries(locales)) {
     assert.ok(html.includes(copy.status));
     assert.ok(html.includes(copy.footer));
     assert.match(html, /<meta name="description" content="[^"]+">/);
-    assert.match(html, /<meta name="robots" content="noindex, follow">/);
+    const robots = robotsTokens(html);
+    assert.ok(robots.has("index"));
+    assert.ok(robots.has("follow"));
+    assert.ok(!robots.has("noindex"));
+    assert.ok(!robots.has("nofollow"));
     assert.match(html, new RegExp(`<link rel="canonical" href="https://jlptvoca\\.com/${locale}/">`));
     assert.equal((html.match(/<h1\b/g) ?? []).length, 1);
     assert.equal((html.match(/<main\b/g) ?? []).length, 1);
   });
 }
 
-test("all localized pages provide reciprocal language links", async () => {
-  for (const locale of Object.keys(locales)) {
-    const html = await readParkingFile(`${locale}/index.html`);
-    for (const targetLocale of Object.keys(locales)) {
-      assert.match(html, new RegExp(`hreflang="${targetLocale}"`));
-      assert.match(html, new RegExp(`data-locale="${targetLocale}"`));
-    }
-    assert.match(html, /hreflang="x-default" href="https:\/\/jlptvoca\.com\/"/);
+test("all public pages provide the same reciprocal hreflang cluster", async () => {
+  for (const page of Object.keys(seoPages)) {
+    const html = await readParkingFile(page);
+    const actual = [...html.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)]
+      .map(([, language, href]) => [language, href]);
+
+    assert.deepEqual(actual, hreflangCluster);
   }
 });
 
-test("root remains useful without JavaScript and declares x-default", async () => {
+test("root is an indexable x-default language gateway without an automatic redirect", async () => {
   const html = await readParkingFile("index.html");
+  const robots = robotsTokens(html);
 
   assert.match(html, /<html[^>]+lang="en"/);
-  assert.match(html, /<body[^>]+data-page="router"/);
-  assert.match(html, /Small steps\. Stronger Japanese\./);
-  assert.match(html, /hreflang="x-default"/);
+  assert.match(html, /<body[^>]+data-page="gateway"/);
+  assert.match(html, /Japanese vocabulary study, in your language\./);
+  assert.ok(robots.has("index"));
+  assert.ok(!robots.has("noindex"));
+  assert.doesNotMatch(html, /aria-current="page"[^>]*>English/);
+  assert.match(html, /id="language-recommendation"[^>]*>Recommended based on your browser language</);
   assert.match(html, /<script type="module" src="assets\/site\.js"><\/script>/);
+});
+
+test("public pages are self-canonical and expose stable favicon metadata", async () => {
+  for (const [page, seo] of Object.entries(seoPages)) {
+    const html = await readParkingFile(page);
+    const canonicals = [...html.matchAll(/<link rel="canonical" href="([^"]+)">/g)].map(([, url]) => url);
+
+    assert.deepEqual(canonicals, [seo.url]);
+    assert.match(html, /<link rel="icon" type="image\/png" sizes="128x128" href="\/assets\/favicon\.png">/);
+  }
+});
+
+test("share metadata is complete, absolute, and localized", async () => {
+  const ogLocales = [...new Set(Object.values(seoPages).map(({ ogLocale }) => ogLocale))];
+
+  for (const [page, seo] of Object.entries(seoPages)) {
+    const html = await readParkingFile(page);
+    const alternates = [...html.matchAll(/<meta property="og:locale:alternate" content="([^"]+)">/g)]
+      .map(([, locale]) => locale)
+      .sort();
+
+    assert.equal(html.match(/<title>([^<]+)<\/title>/)?.[1], seo.title);
+    assert.equal(metaContent(html, "name", "description"), seo.description);
+    assert.equal(metaContent(html, "property", "og:type"), "website");
+    assert.equal(metaContent(html, "property", "og:site_name"), "JLPT VOCA");
+    assert.equal(metaContent(html, "property", "og:title"), seo.title);
+    assert.equal(metaContent(html, "property", "og:description"), seo.description);
+    assert.equal(metaContent(html, "property", "og:url"), seo.url);
+    assert.equal(metaContent(html, "property", "og:locale"), seo.ogLocale);
+    assert.deepEqual(alternates, ogLocales.filter((locale) => locale !== seo.ogLocale).sort());
+    assert.equal(metaContent(html, "property", "og:image"), "https://jlptvoca.com/assets/og.jpg");
+    assert.equal(metaContent(html, "property", "og:image:type"), "image/jpeg");
+    assert.equal(metaContent(html, "property", "og:image:width"), "1200");
+    assert.equal(metaContent(html, "property", "og:image:height"), "630");
+    assert.equal(metaContent(html, "property", "og:image:alt"), seo.imageAlt);
+    assert.equal(metaContent(html, "name", "twitter:card"), "summary_large_image");
+    assert.equal(metaContent(html, "name", "twitter:title"), seo.title);
+    assert.equal(metaContent(html, "name", "twitter:description"), seo.description);
+    assert.equal(metaContent(html, "name", "twitter:image"), "https://jlptvoca.com/assets/og.jpg");
+    assert.equal(metaContent(html, "name", "twitter:image:alt"), seo.imageAlt);
+  }
+});
+
+test("root declares an accurate WebSite entity without claiming unreleased features", async () => {
+  const root = await readParkingFile("index.html");
+
+  assert.match(root, /itemscope itemtype="https:\/\/schema\.org\/WebSite"/);
+  assert.match(root, /itemprop="url" href="https:\/\/jlptvoca\.com\/"/);
+  assert.match(root, /itemprop="name" content="JLPT VOCA"/);
+  assert.match(root, /itemprop="alternateName" content="jlptvoca\.com"/);
+  assert.doesNotMatch(root, /Course|Product|Offer|SoftwareApplication|SearchAction/);
+
+  for (const locale of Object.keys(locales)) {
+    assert.doesNotMatch(await readParkingFile(`${locale}/index.html`), /itemtype="https:\/\/schema\.org\/WebSite"/);
+  }
+});
+
+test("robots exposes crawling and points to the canonical sitemap", async () => {
+  const robots = (await readParkingFile("robots.txt")).replaceAll("\r\n", "\n");
+
+  assert.match(robots, /^User-agent: \*$/m);
+  assert.match(robots, /^Allow: \/$/m);
+  assert.match(robots, /^Sitemap: https:\/\/jlptvoca\.com\/sitemap\.xml$/m);
+  assert.doesNotMatch(robots, /^Disallow:/m);
+});
+
+test("sitemap contains every and only indexable canonical URL once", async () => {
+  const sitemap = await readParkingFile("sitemap.xml");
+  const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, url]) => url);
+
+  assert.match(sitemap, /^<\?xml version="1\.0" encoding="UTF-8"\?>/);
+  assert.match(sitemap, /<urlset[^>]+xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9"/);
+  assert.deepEqual(urls, Object.values(seoPages).map(({ url }) => url));
+  assert.equal(new Set(urls).size, urls.length);
+  assert.doesNotMatch(sitemap, /<lastmod>|<changefreq>|<priority>|404/);
 });
 
 test("decorative review visual exposes the Anki-style review sequence", async () => {
@@ -202,8 +333,9 @@ test("404 page is noindex and returns users to a language home", async () => {
 
   assert.match(html, /<meta name="robots" content="noindex, nofollow">/);
   assert.match(html, /Page not found/);
-  assert.match(html, /<body[^>]+data-page="router"/);
+  assert.match(html, /<body[^>]+data-page="not-found"/);
   assert.match(html, /href="\/en\/"/);
+  assert.doesNotMatch(html, /<link rel="canonical"|<link rel="alternate" hreflang=|itemtype="https:\/\/schema\.org\/WebSite"/);
 });
 
 test("GitHub Pages workflow validates and deploys only the parking artifact", async () => {

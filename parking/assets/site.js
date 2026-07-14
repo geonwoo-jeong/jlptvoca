@@ -9,7 +9,6 @@ import {
 export function initializeLocaleNavigation({
   document,
   navigator,
-  location,
   storage,
 } = {}) {
   if (!document?.body) {
@@ -29,7 +28,7 @@ export function initializeLocaleNavigation({
     return pageLocale;
   }
 
-  if (document.body.dataset.page !== "router") {
+  if (document.body.dataset.page !== "gateway") {
     return DEFAULT_LOCALE;
   }
 
@@ -40,8 +39,9 @@ export function initializeLocaleNavigation({
   });
   const destination = document.querySelector(`[data-locale="${selectedLocale}"]`);
 
-  if (destination?.href && typeof location?.replace === "function") {
-    location.replace(destination.href);
+  if (destination?.dataset) {
+    destination.dataset.recommended = "true";
+    destination.setAttribute?.("aria-describedby", "language-recommendation");
   }
 
   return selectedLocale;
@@ -59,7 +59,6 @@ if (typeof window !== "undefined") {
   initializeLocaleNavigation({
     document: window.document,
     navigator: window.navigator,
-    location: window.location,
     storage: getBrowserStorage(window),
   });
 }

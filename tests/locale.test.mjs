@@ -94,10 +94,14 @@ function createEnvironment({ page = "locale", locale = "", languages = ["en-US"]
   const stored = new Map();
   const listeners = new Map();
   const links = ["en", "vi", "id"].map((linkLocale) => ({
+    attributes: {},
     dataset: { locale: linkLocale },
     href: `https://jlptvoca.com/${linkLocale}/`,
     addEventListener(eventName, callback) {
       listeners.set(`${linkLocale}:${eventName}`, callback);
+    },
+    setAttribute(name, value) {
+      this.attributes[name] = value;
     },
   }));
   const document = {
@@ -137,8 +141,8 @@ function createEnvironment({ page = "locale", locale = "", languages = ["en-US"]
   };
 }
 
-test("root router redirects to the detected locale page", () => {
-  const environment = createEnvironment({ page: "router", languages: ["ja-JP", "vi-VN"] });
+test("root gateway highlights the detected locale without redirecting", () => {
+  const environment = createEnvironment({ page: "gateway", languages: ["ja-JP", "vi-VN"] });
 
   const result = initializeLocaleNavigation({
     document: environment.document,
@@ -148,7 +152,10 @@ test("root router redirects to the detected locale page", () => {
   });
 
   assert.equal(result, "vi");
-  assert.equal(environment.getReplacedUrl(), "https://jlptvoca.com/vi/");
+  const recommendedLink = environment.links.find((link) => link.dataset.locale === "vi");
+  assert.equal(recommendedLink.dataset.recommended, "true");
+  assert.equal(recommendedLink.attributes["aria-describedby"], "language-recommendation");
+  assert.equal(environment.getReplacedUrl(), null);
 });
 
 test("an explicit locale page saves its locale without redirecting", () => {
