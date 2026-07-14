@@ -284,7 +284,7 @@ html[lang="id"] .eyebrow {
 
 .study-visual {
   position: relative;
-  min-height: 32rem;
+  min-height: 36rem;
   isolation: isolate;
 }
 
@@ -314,10 +314,10 @@ html[lang="id"] .eyebrow {
   transform: rotate(-11deg);
 }
 
-.word-card {
+.flashcard {
   position: absolute;
   display: flex;
-  width: clamp(14rem, 24vw, 18rem);
+  width: clamp(15rem, 25vw, 19rem);
   aspect-ratio: 0.72;
   flex-direction: column;
   justify-content: space-between;
@@ -330,19 +330,37 @@ html[lang="id"] .eyebrow {
   transform-origin: 50% 90%;
 }
 
-.word-card::after {
-  position: absolute;
-  right: -2rem;
-  bottom: -2rem;
-  width: 7rem;
-  height: 7rem;
-  border: 1.1rem double currentcolor;
-  border-radius: 50%;
-  content: "";
-  opacity: 0.08;
+.flashcard__queue {
+  top: 0.8rem;
+  left: 0;
+  z-index: -1;
+  justify-content: flex-start;
+  gap: 0.72rem;
+  border-color: rgba(255, 250, 240, 0.08);
+  background: var(--ink);
+  box-shadow: 0 25px 60px rgba(23, 35, 31, 0.2);
+  opacity: 0.93;
+  transform: rotate(-9deg);
+  animation: flashcard-float-queue 8s ease-in-out infinite;
 }
 
-.word-card__top {
+.flashcard__queue-line {
+  display: block;
+  width: 54%;
+  height: 0.32rem;
+  border-radius: 999px;
+  background: rgba(255, 250, 240, 0.16);
+}
+
+.flashcard__queue-line:nth-child(2) {
+  width: 72%;
+}
+
+.flashcard__queue-line:nth-child(3) {
+  width: 42%;
+}
+
+.flashcard__chrome {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -353,52 +371,145 @@ html[lang="id"] .eyebrow {
   text-transform: uppercase;
 }
 
-.word-card__level {
-  display: inline-grid;
-  min-width: 2rem;
-  min-height: 2rem;
-  place-items: center;
-  border: 1px solid currentcolor;
-  border-radius: 50%;
+.flashcard__deck {
+  font-size: 0.92rem;
+  letter-spacing: 0.16em;
 }
 
-.word-card__glyph {
-  align-self: center;
-  margin-block: auto;
+.flashcard__status {
+  display: block;
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 50%;
+  background: var(--sage);
+  box-shadow: 0 0 0 0.26rem rgba(141, 155, 129, 0.16);
+}
+
+.flashcard__front {
+  top: 2.4rem;
+  left: 3.9rem;
+  z-index: 3;
+  color: var(--ink);
+  transform: rotate(-1.5deg);
+  animation: flashcard-float-front 6.5s ease-in-out infinite;
+}
+
+.flashcard__prompt {
+  position: relative;
+  display: grid;
+  flex: 1;
+  place-items: center;
+  isolation: isolate;
+}
+
+.flashcard__prompt::before {
+  position: absolute;
+  z-index: -1;
+  width: 8.4rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(214, 87, 63, 0.09);
+  content: "";
+}
+
+.flashcard__glyph {
+  color: var(--vermilion-dark);
   font-family: var(--serif);
-  font-size: clamp(6.2rem, 10vw, 8rem);
+  font-size: clamp(6.5rem, 10vw, 8.4rem);
   font-weight: 500;
   line-height: 1;
 }
 
-.word-card--back {
-  top: 1.2rem;
-  left: 1.5rem;
-  color: var(--ink);
-  transform: rotate(-10deg);
-  animation: card-breathe-back 7s ease-in-out infinite;
+.flashcard__reveal {
+  display: grid;
+  min-height: 3.15rem;
+  place-items: center;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 0.72rem 0.72rem;
+  color: var(--ink-soft);
+  background: rgba(236, 226, 208, 0.34);
 }
 
-.word-card--middle {
-  top: 4.1rem;
-  right: 0;
+.flashcard__reveal-mark {
+  display: block;
+  width: 2.4rem;
+  height: 0.45rem;
+  border: solid currentcolor;
+  border-width: 0 0 2px 2px;
+  transform: rotate(-45deg) translate(0.25rem, -0.25rem);
+}
+
+.flashcard__answer {
+  top: 8.2rem;
+  right: -0.4rem;
+  z-index: 2;
   color: #3c5147;
   background: #e4e8dc;
-  transform: rotate(8deg);
-  animation: card-breathe-middle 8s ease-in-out infinite;
+  transform: rotate(7deg);
+  animation: flashcard-float-answer 7.5s ease-in-out infinite;
 }
 
-.word-card--front {
-  top: 7.8rem;
-  left: 4.9rem;
-  color: var(--ink);
-  background: #fffaf0;
-  transform: rotate(-1.5deg);
-  animation: card-breathe-front 6.5s ease-in-out infinite;
+.flashcard__answer-body {
+  display: grid;
+  flex: 1;
+  align-content: center;
+  gap: 0.78rem;
+  padding-inline: 0.45rem;
 }
 
-.word-card--front .word-card__glyph {
+.flashcard__answer-line {
+  display: block;
+  width: 100%;
+  height: 0.62rem;
+  border-radius: 999px;
+  background: rgba(60, 81, 71, 0.14);
+}
+
+.flashcard__answer-line:nth-child(2) {
+  width: 78%;
+}
+
+.flashcard__answer-line:nth-child(3) {
+  width: 48%;
+}
+
+.flashcard__ratings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.68rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(60, 81, 71, 0.15);
+}
+
+.flashcard__rating {
+  display: flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.48rem;
+  border: 1px solid currentcolor;
+  border-radius: 0.78rem;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+}
+
+.flashcard__rating[data-rating="again"] {
   color: var(--vermilion-dark);
+  background: rgba(214, 87, 63, 0.09);
+}
+
+.flashcard__rating[data-rating="good"] {
+  color: #31584b;
+  background: rgba(49, 88, 75, 0.08);
+}
+
+.flashcard__rating-icon {
+  font-size: 1.05rem;
+}
+
+.flashcard__rating-label {
+  line-height: 1;
 }
 
 .site-footer {
@@ -459,22 +570,22 @@ html[lang="id"] .eyebrow {
   text-decoration: none;
 }
 
-@keyframes card-breathe-back {
+@keyframes flashcard-float-queue {
   0%,
-  100% { transform: translateY(0) rotate(-10deg); }
-  50% { transform: translateY(-0.45rem) rotate(-8.5deg); }
+  100% { transform: translateY(0) rotate(-9deg); }
+  50% { transform: translateY(-0.35rem) rotate(-7.5deg); }
 }
 
-@keyframes card-breathe-middle {
+@keyframes flashcard-float-answer {
   0%,
-  100% { transform: translateY(0) rotate(8deg); }
-  50% { transform: translateY(0.55rem) rotate(6.5deg); }
+  100% { transform: translateY(0) rotate(7deg); }
+  50% { transform: translateY(0.45rem) rotate(5.7deg); }
 }
 
-@keyframes card-breathe-front {
+@keyframes flashcard-float-front {
   0%,
   100% { transform: translateY(0) rotate(-1.5deg); }
-  50% { transform: translateY(-0.65rem) rotate(0deg); }
+  50% { transform: translateY(-0.55rem) rotate(-0.2deg); }
 }
 
 @media (max-width: 900px) {
@@ -501,11 +612,11 @@ html[lang="id"] .eyebrow {
 
   .study-visual {
     width: min(100%, 34rem);
-    min-height: 29rem;
+    min-height: 33rem;
     margin-inline: auto;
   }
 
-  .word-card {
+  .flashcard {
     width: clamp(13.5rem, 42vw, 17rem);
   }
 }
@@ -559,7 +670,7 @@ html[lang="id"] .eyebrow {
   }
 
   .study-visual {
-    min-height: 24rem;
+    min-height: 27.5rem;
   }
 
   .study-visual__sun {
@@ -567,27 +678,37 @@ html[lang="id"] .eyebrow {
     width: 13rem;
   }
 
-  .word-card {
-    width: min(12.4rem, 58vw);
+  .flashcard {
+    width: min(13rem, 62vw);
     padding: 1rem;
     border-radius: 1.1rem;
   }
 
-  .word-card__glyph {
-    font-size: 5.2rem;
+  .flashcard__glyph {
+    font-size: 5.5rem;
   }
 
-  .word-card--back {
-    left: 0.6rem;
+  .flashcard__queue {
+    top: 0.4rem;
+    left: 0.3rem;
   }
 
-  .word-card--middle {
-    top: 3.3rem;
+  .flashcard__front {
+    top: 1.5rem;
+    left: 1.4rem;
   }
 
-  .word-card--front {
-    top: 6.4rem;
-    left: 3.3rem;
+  .flashcard__answer {
+    top: 7.4rem;
+    right: 0.2rem;
+  }
+
+  .flashcard__ratings {
+    gap: 0.4rem;
+  }
+
+  .flashcard__rating {
+    min-height: 2.65rem;
   }
 
   .site-footer {
@@ -633,7 +754,7 @@ html[lang="id"] .eyebrow {
     border: 1px solid ButtonText;
   }
 
-  .word-card,
+  .flashcard,
   .launch-note,
   .language-nav__links {
     border: 1px solid CanvasText;

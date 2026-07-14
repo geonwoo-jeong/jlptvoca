@@ -34,6 +34,14 @@ const locales = {
   },
 };
 
+const visualPages = ["index.html", "en/index.html", "vi/index.html", "id/index.html"];
+const visualRatingLabels = {
+  "index.html": ["Again", "Good"],
+  "en/index.html": ["Again", "Good"],
+  "vi/index.html": ["Lại", "Tốt"],
+  "id/index.html": ["Ulangi", "Bagus"],
+};
+
 async function readParkingFile(relativePath) {
   return readFile(path.join(parkingRoot, relativePath), "utf8");
 }
@@ -127,6 +135,45 @@ test("root remains useful without JavaScript and declares x-default", async () =
   assert.match(html, /Small steps\. Stronger Japanese\./);
   assert.match(html, /hreflang="x-default"/);
   assert.match(html, /<script type="module" src="assets\/site\.js"><\/script>/);
+});
+
+test("decorative review visual exposes the Anki-style review sequence", async () => {
+  for (const page of visualPages) {
+    const html = await readParkingFile(page);
+    const ratings = [...html.matchAll(/data-rating="([^"]+)"/g)].map((match) => match[1]);
+
+    assert.match(html, /class="study-visual"[^>]*aria-hidden="true"/);
+    assert.match(html, /class="[^"]*flashcard__front[^"]*"/);
+    assert.match(html, /class="[^"]*flashcard__reveal[^"]*"/);
+    assert.deepEqual(ratings, ["again", "good"]);
+    for (const label of visualRatingLabels[page]) {
+      assert.match(html, new RegExp(`class="flashcard__rating-label">${label}<`));
+    }
+  }
+});
+
+test("aria-hidden review decoration contains no interactive controls", async () => {
+  for (const page of visualPages) {
+    const html = await readParkingFile(page);
+    const visual = html.match(/<section class="study-visual"[^>]*>[\s\S]*?<\/section>/)?.[0];
+
+    assert.ok(visual);
+    assert.doesNotMatch(visual, /<(a|button|input|select|textarea)\b|tabindex=/i);
+  }
+});
+
+test("review decoration contains no romanization or invented lesson content", async () => {
+  for (const page of visualPages) {
+    const html = await readParkingFile(page);
+    const visual = html.match(/<section class="study-visual"[^>]*>[\s\S]*?<\/section>/)?.[0];
+
+    assert.ok(visual);
+    assert.doesNotMatch(
+      visual,
+      /\b(MANABU|TSUZUKU|KOTOBA|N[1-5])\b|まなぶ|つづく|ことば|word-card__reading/i,
+    );
+    assert.doesNotMatch(visual, />[一二三]</);
+  }
 });
 
 test("pages use restrictive metadata and no tracking or collection surfaces", async () => {
